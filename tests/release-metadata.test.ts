@@ -318,10 +318,10 @@ describe("release metadata", () => {
       await readFile(resolve(root, "package.json"), "utf8"),
     );
     expect(packageJson.scripts["package:macos"]).toBe(
-      "node scripts/package-release.mjs macos",
+      "pnpm prepare:distribution-notices && node scripts/package-release.mjs macos",
     );
     expect(packageJson.scripts["package:windows"]).toBe(
-      "node scripts/package-release.mjs windows",
+      "pnpm prepare:distribution-notices && node scripts/package-release.mjs windows",
     );
     expect(packageJson.scripts["package:macos"]).not.toContain(
       "write-release-provenance",

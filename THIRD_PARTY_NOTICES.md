@@ -65,7 +65,7 @@ The following reflects the resolved direct dependencies, including platform-spec
 | `uuid` | 1.20.0 | Apache-2.0 OR MIT |
 | `windows-sys` | 0.61.2 | MIT OR Apache-2.0 |
 
-The machine-readable direct-dependency inventory is in `docs/direct-dependency-licenses.json`. When distributing binaries, also collect notices for the full resolved transitive graph and any bundled native components. Keep upstream copyright notices and license texts with redistributed components.
+The machine-readable direct-dependency inventory is in `docs/direct-dependency-licenses.json`. Packaging also runs `scripts/prepare-distribution-notices.mjs` to collect the resolved dependency inventory and available upstream notices into the generated `public/third-party-licenses/` resources. Packages without a bundled license text remain explicitly marked; their source links are retained. The inventory includes build, development, and platform-specific dependencies and does not claim that every listed dependency is linked into each executable. Keep upstream copyright notices and license texts with redistributed components.
 
 ## Project images
 

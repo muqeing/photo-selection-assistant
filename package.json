@@ -14,8 +14,9 @@
     "smoke:csp": "pnpm prepare:ocr && node scripts/verify-csp-runtime.mjs",
     "release:metadata": "node scripts/generate-release-metadata.mjs",
     "smoke:macos-bundle": "node scripts/verify-macos-bundle.mjs",
-    "package:macos": "node scripts/package-release.mjs macos",
-    "package:windows": "node scripts/package-release.mjs windows",
+    "prepare:distribution-notices": "node scripts/prepare-distribution-notices.mjs",
+    "package:macos": "pnpm prepare:distribution-notices && node scripts/package-release.mjs macos",
+    "package:windows": "pnpm prepare:distribution-notices && node scripts/package-release.mjs windows",
     "check:rust": "cd src-tauri && cargo fmt --check && cargo test && cargo clippy --all-targets -- -D warnings"
   },
   "dependencies": {

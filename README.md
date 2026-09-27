@@ -20,7 +20,19 @@
 完成报告 ← 内容校验与安全复制 ← 处理重号、缺失与冲突
 ```
 
-详细操作请读 [使用说明](docs/user-guide.md)。首次公开提供源码，安装包发布状态以本仓库 Releases 为准。
+详细操作请读 [使用说明](docs/user-guide.md)。
+
+## 下载安装包
+
+从 [GitHub Releases](https://github.com/muqeing/photo-selection-assistant/releases) 下载 0.1.23 预发布版：
+
+| 系统 | 文件 |
+| --- | --- |
+| Mac Apple Silicon（M 系列） | `PhotoSelector-0.1.23-arm64.dmg` |
+| Windows 64 位 | `PhotoSelector-0.1.23-x64-setup.exe` |
+| Windows 64 位 MSI | `PhotoSelector-0.1.23-x64-zh-CN.msi` |
+
+Release 同时提供 SHA-256 校验值、构建来源和第三方许可文件。Mac 包是本地 ad-hoc 签名、未 Apple 公证；Windows 包没有发布者签名。桌面全流程和实际 NAS 场景尚有待验收项，见验证记录。
 
 ## 从源码构建
 

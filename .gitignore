@@ -3,6 +3,7 @@
 node_modules/
 dist/
 /public/ocr/
+/public/third-party-licenses/
 src-tauri/target/
 .DS_Store
 .env
