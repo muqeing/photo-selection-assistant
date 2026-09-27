@@ -1,0 +1,134 @@
+.nav-item:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid #ffc653;
+  outline-offset: 2px;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.input-previews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.input-log {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.input-log img,
+.candidate-group img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  background: #0d0e0d;
+}
+
+.input-log span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#number-list .low-confidence {
+  border-left: 2px solid #ef906a;
+  padding-left: 6px;
+}
+
+.match {
+  display: block;
+}
+
+.match > header {
+  display: grid;
+  grid-template-columns: 140px 130px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.candidate-group {
+  margin: 12px 0 0 140px;
+  padding: 12px;
+  border: 1px solid #45443d;
+}
+
+.candidate-group h4 {
+  margin: 0 0 8px;
+}
+
+.candidate-group ul {
+  padding-left: 18px;
+  color: #b9b5aa;
+  font-size: 12px;
+}
+
+.candidate-group time {
+  color: #858176;
+}
+
+.resolution-actions,
+.modal-actions,
+.provider-list article > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.completion {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #4c875b;
+  background: #18241b;
+}
+
+.completion dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.completion dt {
+  color: #938e82;
+  font-size: 12px;
+}
+
+.completion dd {
+  margin: 4px 0 0;
+  color: #f2ecde;
+}
+
+.scan-progress {
+  margin-top: 18px;
+  padding: 15px 18px;
+  border: 1px solid #766034;
+  background: #211f18;
+}
+
+.scan-progress progress {
+  display: block;
+  width: 100%;
+  height: 10px;
+}
+
+.scan-progress p {
+  margin: 10px 0 4px;
+  color: #f2ecde;
+}
+
+.scan-progress small {
+  color: #b9b5aa;
+}
+
+@media (max-width: 880px) {
+  .candidate-group {
+    margin-left: 0;
+  }
+}

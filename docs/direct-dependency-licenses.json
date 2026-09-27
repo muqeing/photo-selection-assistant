@@ -1,0 +1,271 @@
+{
+  "scope": "Direct dependencies only; transitive license audit is not claimed.",
+  "javascript": [
+    {
+      "name": "@tauri-apps/api",
+      "version": "2.11.1",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "git+https://github.com/tauri-apps/tauri.git",
+      "scope": "dependencies"
+    },
+    {
+      "name": "@tauri-apps/plugin-clipboard-manager",
+      "version": "2.3.2",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "scope": "dependencies"
+    },
+    {
+      "name": "@tauri-apps/plugin-dialog",
+      "version": "2.7.2",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/tauri-apps/plugins-workspace",
+      "scope": "dependencies"
+    },
+    {
+      "name": "@tesseract.js-data/chi_sim",
+      "version": "1.0.0",
+      "license": "MIT",
+      "repository": "https://github.com/naptha/tessdata.git",
+      "scope": "dependencies"
+    },
+    {
+      "name": "@tesseract.js-data/eng",
+      "version": "1.0.0",
+      "license": "MIT",
+      "repository": "https://github.com/naptha/tessdata.git",
+      "scope": "dependencies"
+    },
+    {
+      "name": "tesseract.js",
+      "version": "7.0.0",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/naptha/tesseract.js.git",
+      "scope": "dependencies"
+    },
+    {
+      "name": "tesseract.js-core",
+      "version": "7.0.0",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/naptha/tesseract.js-core.git",
+      "scope": "dependencies"
+    },
+    {
+      "name": "@tauri-apps/cli",
+      "version": "2.11.4",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "git+https://github.com/tauri-apps/tauri.git",
+      "scope": "devDependencies"
+    },
+    {
+      "name": "@types/node",
+      "version": "22.19.7",
+      "license": "MIT",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+      "scope": "devDependencies"
+    },
+    {
+      "name": "typescript",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/microsoft/TypeScript.git",
+      "scope": "devDependencies"
+    },
+    {
+      "name": "vite",
+      "version": "8.1.5",
+      "license": "MIT",
+      "repository": "git+https://github.com/vitejs/vite.git",
+      "scope": "devDependencies"
+    },
+    {
+      "name": "vitest",
+      "version": "4.1.10",
+      "license": "MIT",
+      "repository": "git+https://github.com/vitest-dev/vitest.git",
+      "scope": "devDependencies"
+    }
+  ],
+  "rust": [
+    {
+      "name": "base64",
+      "version": "0.22.1",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/marshallpierce/rust-base64"
+    },
+    {
+      "name": "blake3",
+      "version": "1.8.2",
+      "license": "CC0-1.0 OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception",
+      "repository": "https://github.com/BLAKE3-team/BLAKE3"
+    },
+    {
+      "name": "cap-fs-ext",
+      "version": "4.0.2",
+      "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/bytecodealliance/cap-std"
+    },
+    {
+      "name": "cap-primitives",
+      "version": "4.0.2",
+      "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/bytecodealliance/cap-std"
+    },
+    {
+      "name": "cap-std",
+      "version": "4.0.2",
+      "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/bytecodealliance/cap-std"
+    },
+    {
+      "name": "chrono",
+      "version": "0.4.45",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/chronotope/chrono"
+    },
+    {
+      "name": "crc32fast",
+      "version": "1.5.0",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/srijs/rust-crc32fast"
+    },
+    {
+      "name": "fs2",
+      "version": "0.4.3",
+      "license": "MIT/Apache-2.0",
+      "repository": "https://github.com/danburkert/fs2-rs"
+    },
+    {
+      "name": "httpmock",
+      "version": "0.7.0",
+      "license": "MIT",
+      "repository": "https://github.com/alexliesenfeld/httpmock"
+    },
+    {
+      "name": "image",
+      "version": "0.25.5",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/image-rs/image"
+    },
+    {
+      "name": "image-webp",
+      "version": "0.2.0",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/image-rs/image-webp"
+    },
+    {
+      "name": "keyring",
+      "version": "3.6.3",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/hwchen/keyring-rs.git"
+    },
+    {
+      "name": "libc",
+      "version": "0.2.189",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/rust-lang/libc"
+    },
+    {
+      "name": "log",
+      "version": "0.4.33",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/rust-lang/log"
+    },
+    {
+      "name": "reqwest",
+      "version": "0.12.24",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/seanmonstar/reqwest"
+    },
+    {
+      "name": "rusqlite",
+      "version": "0.32.1",
+      "license": "MIT",
+      "repository": "https://github.com/rusqlite/rusqlite"
+    },
+    {
+      "name": "security-framework",
+      "version": "3.6.0",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/kornelski/rust-security-framework"
+    },
+    {
+      "name": "serde",
+      "version": "1.0.229",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/serde-rs/serde"
+    },
+    {
+      "name": "serde_json",
+      "version": "1.0.151",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/serde-rs/json"
+    },
+    {
+      "name": "tauri",
+      "version": "2.11.5",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "https://github.com/tauri-apps/tauri"
+    },
+    {
+      "name": "tauri-build",
+      "version": "2.6.3",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "https://github.com/tauri-apps/tauri"
+    },
+    {
+      "name": "tauri-plugin-clipboard-manager",
+      "version": "2.3.2",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "https://github.com/tauri-apps/plugins-workspace"
+    },
+    {
+      "name": "tauri-plugin-dialog",
+      "version": "2.7.2",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "https://github.com/tauri-apps/plugins-workspace"
+    },
+    {
+      "name": "tauri-plugin-log",
+      "version": "2.9.0",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "https://github.com/tauri-apps/plugins-workspace"
+    },
+    {
+      "name": "tempfile",
+      "version": "3.27.0",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/Stebalien/tempfile"
+    },
+    {
+      "name": "thiserror",
+      "version": "2.0.19",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/dtolnay/thiserror"
+    },
+    {
+      "name": "tokio",
+      "version": "1.53.1",
+      "license": "MIT",
+      "repository": "https://github.com/tokio-rs/tokio"
+    },
+    {
+      "name": "url",
+      "version": "2.5.8",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/servo/rust-url"
+    },
+    {
+      "name": "uuid",
+      "version": "1.20.0",
+      "license": "Apache-2.0 OR MIT",
+      "repository": "https://github.com/uuid-rs/uuid"
+    },
+    {
+      "name": "windows-sys",
+      "version": "0.61.2",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/microsoft/windows-rs"
+    }
+  ]
+}

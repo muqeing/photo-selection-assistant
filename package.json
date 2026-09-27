@@ -1,0 +1,51 @@
+{
+  "name": "photo-selection-assistant",
+  "private": true,
+  "version": "0.1.23",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 1420",
+    "prepare:ocr": "node scripts/copy-ocr-assets.mjs",
+    "pretest": "pnpm prepare:ocr",
+    "build": "pnpm prepare:ocr && tsc --noEmit && vite build",
+    "test": "vitest run",
+    "tauri": "tauri",
+    "acceptance:fixture": "node scripts/create-acceptance-fixture.mjs",
+    "smoke:csp": "pnpm prepare:ocr && node scripts/verify-csp-runtime.mjs",
+    "release:metadata": "node scripts/generate-release-metadata.mjs",
+    "smoke:macos-bundle": "node scripts/verify-macos-bundle.mjs",
+    "package:macos": "node scripts/package-release.mjs macos",
+    "package:windows": "node scripts/package-release.mjs windows",
+    "check:rust": "cd src-tauri && cargo fmt --check && cargo test && cargo clippy --all-targets -- -D warnings"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
+    "@tauri-apps/plugin-dialog": "^2.7.2",
+    "@tesseract.js-data/chi_sim": "1.0.0",
+    "@tesseract.js-data/eng": "1.0.0",
+    "tesseract.js": "7.0.0",
+    "tesseract.js-core": "7.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
+    "@types/node": "22.19.7",
+    "typescript": "7.0.2",
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
+  },
+  "description": "Local-first photo number selection and safe RAW/JPEG copying for macOS and Windows",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/muqeing/photo-selection-assistant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/muqeing/photo-selection-assistant/issues"
+  },
+  "author": "muqeing",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "packageManager": "pnpm@11.12.0",
+  "license": "MIT"
+}
