@@ -31,6 +31,8 @@ export type AppState = {
   numbersConfirmed: boolean;
   sourceDir?: string;
   targetDir?: string;
+  /** Persistent network-copy records recovered from the backend workflow. */
+  incompleteTargets?: string[];
   matchReport?: MatchReport;
   blockingIssues: BlockingIssue[];
   copyProgress?: CopyProgress;
@@ -303,6 +305,7 @@ export function invalidateNumberWorkflow(state: AppState) {
     confirmed: false,
   }));
   state.matchReport = undefined;
+  state.incompleteTargets = undefined;
   state.blockingIssues = [];
   state.pendingRecognitionRetry = undefined;
   state.recognitionProgress = undefined;
@@ -337,6 +340,7 @@ export function beginNumberConfirmation(
   state.recognitionProgress = undefined;
   syncRecognitionProgressPanel(state);
   state.matchReport = undefined;
+  state.incompleteTargets = undefined;
   state.blockingIssues = [];
   state.numbersConfirmed = checked;
   state.draftNumbers = state.draftNumbers.map(number => ({
@@ -415,6 +419,7 @@ export function beginSessionSwitch(state: AppState, sessionId?: string): Workflo
   state.copyAttemptGeneration = (state.copyAttemptGeneration ?? 0) + 1;
   state.activeSession = undefined;
   resetCopyRuntime(state, true);
+  state.incompleteTargets = undefined;
   state.copyRuntimeSessionId = sessionId ?? "";
   state.pendingWorkflowSessionId = sessionId;
   state.inputImportBusy = false;
@@ -923,6 +928,13 @@ function page(state: AppState) {
     case "file-settings": return filePage(state);
   }
 }
+function networkCopyNoticeMarkup(state: Pick<AppState, "incompleteTargets">) {
+  const targets = state.incompleteTargets?.map(target => escapeHtml(redactPath(target))).filter(Boolean) ?? [];
+  const recovered = targets.length
+    ? ` 已发现未完成记录：${targets.join("、")}。`
+    : "";
+  return `<p class="notice">Mac NAS（SMB）网络复制：${recovered}完成前请勿使用输出文件；断开或取消会留下未完成记录并阻止自动重试，请改选空目标目录重试，或人工核对后处理目标及同名记录。</p>`;
+}
 function scanProgressMarkup(state: AppState) {
   if (state.numberWorkflowCommandPending !== "scan") return "";
   return `<section id="scan-progress" class="scan-progress" aria-live="polite"><progress></progress><p>正在快速检查文件名…</p><small>已检查 ${state.scanProgress?.checkedFiles ?? 0} 个文件 · 找到 ${state.scanProgress?.matchedFiles ?? 0} 个候选 · ${((state.scanProgress?.elapsedMs ?? 0) / 1000).toFixed(1)} 秒</small></section>`;
@@ -939,7 +951,7 @@ function workbenchPage(state: AppState) {
   const completion = state.completionReport ? `<section class="completion" aria-live="polite"><h2>${state.completionReport.status === "completed" ? "复制完成" : state.completionReport.status === "cancelled" ? "复制已取消" : "复制失败"}</h2><p>${escapeHtml(state.completionReport.message)}</p><dl><div><dt>已复制</dt><dd>${state.completionReport.copiedCount}</dd></div><div><dt>相同跳过</dt><dd>${state.completionReport.skippedIdenticalCount}</dd></div><div><dt>人工跳过</dt><dd>${state.completionReport.skippedUserCount}</dd></div><div><dt>失败</dt><dd>${state.completionReport.failedCount}</dd></div><div><dt>源目录</dt><dd>${escapeHtml(state.completionReport.source)}</dd></div><div><dt>目标目录</dt><dd>${escapeHtml(state.completionReport.target)}</dd></div><div><dt>开始</dt><dd>${state.completionReport.startedAt ? escapeHtml(new Date(state.completionReport.startedAt).toLocaleString()) : "未记录"}</dd></div><div><dt>结束</dt><dd>${escapeHtml(new Date(state.completionReport.finishedAt).toLocaleString())}</dd></div></dl>${state.completionReport.status === "failed" ? `<button id="retry-failed-copy" type="button">返回重新扫描</button>` : ""}</section>` : "";
   const directoryReady = Boolean(state.sourceDir && state.targetDir);
   const canScan = canScanDirectory(state);
-  return `<header class="work-head"><div><p>ACTIVE SESSION</p><h1>${escapeHtml(state.activeSession?.taskLabel ?? "")}</h1></div><div class="state-chip ${state.numbersConfirmed ? "ok" : ""}">${state.copyActive ? "COPYING" : state.numbersConfirmed ? "NUMBERS LOCKED" : "AWAITING CHECK"}</div></header>${state.detectedOrderId ? `<p class="order-check">检测订单号 / ${escapeHtml(state.detectedOrderId)} · 仅核对用</p>` : ""}<div class="work-grid"><section class="station"><div class="station-title"><b>01</b><h2>客户选片信息</h2></div>${renderScreenshotImportControls({...state, inputImportLocked: numberWorkflowLocked})}<p id="recognition-progress" class="notice" aria-live="polite" ${state.recognitionProgress ? "" : "hidden"}>${escapeHtml(state.recognitionProgress ?? "")}</p><button id="paste-input" type="button" ${state.inputImportBusy || numberWorkflowLocked ? "disabled" : ""}>读取剪贴板</button>${state.inputs.length ? `<button id="retry-input-recognition" type="button" ${state.inputImportBusy || numberWorkflowLocked ? "disabled" : ""}>重新识别已导入内容</button>` : ""}<div class="input-previews">${inputLog}</div></section><section class="station"><div class="station-title"><b>02</b><h2>人工核对编号</h2></div>${state.recognitionNote ? `<p class="notice" aria-live="polite">${escapeHtml(state.recognitionNote)}</p>` : ""}<ul id="number-list">${n || "<li class=empty>等待导入或人工录入。</li>"}</ul><button id="add-number" type="button" ${numberWorkflowLocked ? "disabled" : ""}>+ 添加编号</button><label class="confirm"><input id="confirm-numbers" type="checkbox" ${state.numbersConfirmed ? "checked" : ""} ${numberWorkflowLocked ? "disabled" : ""}> 我已逐项确认编号</label>${state.numbersConfirmed ? `<p class="notice">编号已确认，请继续第 03 步选择照片目录。</p>` : ""}</section><section class="station paths"><div class="station-title"><b>03</b><h2>照片目录</h2></div><p class="notice">${state.numbersConfirmed ? "先选择源照片目录；系统会自动生成目标目录，也可改选目标位置。" : "请先在第 02 步确认编号。"}</p><button id="choose-source" type="button" ${state.numbersConfirmed && !numberWorkflowLocked ? "" : "disabled"}>选择源照片目录</button><form id="manual-source-form" class="manual-path"><label>手动填写源目录<input id="manual-source-path" name="path" type="text" autocomplete="off" placeholder="Z:\\照片 或 \\\\NAS\\共享\\照片" ${state.numbersConfirmed && !numberWorkflowLocked ? "" : "disabled"}></label><button id="bind-manual-source" type="submit" ${state.numbersConfirmed && !numberWorkflowLocked ? "" : "disabled"}>确认此源目录</button><small>也可直接粘贴本机、映射盘或 UNC 路径</small></form><output>${escapeHtml(state.sourceDir ? redactPath(state.sourceDir) : "未选择")}</output><button id="choose-target-base" type="button" ${state.numbersConfirmed && state.sourceDir && !numberWorkflowLocked ? "" : "disabled"}>选择目标目录基准</button><form id="manual-target-base-form" class="manual-path"><label>手动填写目标基准目录<input id="manual-target-base" name="path" type="text" autocomplete="off" placeholder="D:\\项目 或 \\\\NAS\\共享\\项目" ${state.numbersConfirmed && state.sourceDir && !numberWorkflowLocked ? "" : "disabled"}></label><button id="bind-manual-target-base" type="submit" ${state.numbersConfirmed && state.sourceDir && !numberWorkflowLocked ? "" : "disabled"}>确认此目标基准</button></form><output>${escapeHtml(state.targetDir ? redactPath(state.targetDir) : "将自动创建 /照片成片/待精修的原片")}</output>${state.numbersConfirmed ? `<button id="scan" class="amber" type="button" ${canScan ? "" : "disabled"}>开始扫描照片目录</button>${directoryReady ? "" : "<p class=empty>选择完成源照片目录后，才可开始扫描。</p>"}` : ""}</section></div><section class="results"><div class="section-label">04 / MATCH & COPY</div>${matchReport(state)}${state.copyActive ? `<div class="copy-progress" aria-live="polite"><progress max="${state.copyProgress?.totalBytes ?? 1}" value="${state.copyProgress?.copiedBytes ?? 0}"></progress><p>${escapeHtml(state.copyProgress?.currentFile ?? "正在执行复制前检查…")} · ${state.copyProgress?.completedFiles ?? 0}/${state.copyProgress?.totalFiles ?? "?"}</p><button id="cancel-copy" type="button">取消复制</button></div>` : ""}${completion}</section>`;
+  return `<header class="work-head"><div><p>ACTIVE SESSION</p><h1>${escapeHtml(state.activeSession?.taskLabel ?? "")}</h1></div><div class="state-chip ${state.numbersConfirmed ? "ok" : ""}">${state.copyActive ? "COPYING" : state.numbersConfirmed ? "NUMBERS LOCKED" : "AWAITING CHECK"}</div></header>${state.detectedOrderId ? `<p class="order-check">检测订单号 / ${escapeHtml(state.detectedOrderId)} · 仅核对用</p>` : ""}<div class="work-grid"><section class="station"><div class="station-title"><b>01</b><h2>客户选片信息</h2></div>${renderScreenshotImportControls({...state, inputImportLocked: numberWorkflowLocked})}<p id="recognition-progress" class="notice" aria-live="polite" ${state.recognitionProgress ? "" : "hidden"}>${escapeHtml(state.recognitionProgress ?? "")}</p><button id="paste-input" type="button" ${state.inputImportBusy || numberWorkflowLocked ? "disabled" : ""}>读取剪贴板</button>${state.inputs.length ? `<button id="retry-input-recognition" type="button" ${state.inputImportBusy || numberWorkflowLocked ? "disabled" : ""}>重新识别已导入内容</button>` : ""}<div class="input-previews">${inputLog}</div></section><section class="station"><div class="station-title"><b>02</b><h2>人工核对编号</h2></div>${state.recognitionNote ? `<p class="notice" aria-live="polite">${escapeHtml(state.recognitionNote)}</p>` : ""}<ul id="number-list">${n || "<li class=empty>等待导入或人工录入。</li>"}</ul><button id="add-number" type="button" ${numberWorkflowLocked ? "disabled" : ""}>+ 添加编号</button><label class="confirm"><input id="confirm-numbers" type="checkbox" ${state.numbersConfirmed ? "checked" : ""} ${numberWorkflowLocked ? "disabled" : ""}> 我已逐项确认编号</label>${state.numbersConfirmed ? `<p class="notice">编号已确认，请继续第 03 步选择照片目录。</p>` : ""}</section><section class="station paths">${networkCopyNoticeMarkup(state)}<div class="station-title"><b>03</b><h2>照片目录</h2></div><p class="notice">${state.numbersConfirmed ? "先选择源照片目录；系统会自动生成目标目录，也可改选目标位置。" : "请先在第 02 步确认编号。"}</p><button id="choose-source" type="button" ${state.numbersConfirmed && !numberWorkflowLocked ? "" : "disabled"}>选择源照片目录</button><form id="manual-source-form" class="manual-path"><label>手动填写源目录<input id="manual-source-path" name="path" type="text" autocomplete="off" placeholder="Z:\\照片 或 \\\\NAS\\共享\\照片" ${state.numbersConfirmed && !numberWorkflowLocked ? "" : "disabled"}></label><button id="bind-manual-source" type="submit" ${state.numbersConfirmed && !numberWorkflowLocked ? "" : "disabled"}>确认此源目录</button><small>也可直接粘贴本机、映射盘或 UNC 路径</small></form><output>${escapeHtml(state.sourceDir ? redactPath(state.sourceDir) : "未选择")}</output><button id="choose-target-base" type="button" ${state.numbersConfirmed && state.sourceDir && !numberWorkflowLocked ? "" : "disabled"}>选择目标目录基准</button><form id="manual-target-base-form" class="manual-path"><label>手动填写目标基准目录<input id="manual-target-base" name="path" type="text" autocomplete="off" placeholder="D:\\项目 或 \\\\NAS\\共享\\项目" ${state.numbersConfirmed && state.sourceDir && !numberWorkflowLocked ? "" : "disabled"}></label><button id="bind-manual-target-base" type="submit" ${state.numbersConfirmed && state.sourceDir && !numberWorkflowLocked ? "" : "disabled"}>确认此目标基准</button></form><output>${escapeHtml(state.targetDir ? redactPath(state.targetDir) : "将自动创建 /照片成片/待精修的原片")}</output>${state.numbersConfirmed ? `<button id="scan" class="amber" type="button" ${canScan ? "" : "disabled"}>开始扫描照片目录</button>${directoryReady ? "" : "<p class=empty>选择完成源照片目录后，才可开始扫描。</p>"}` : ""}</section></div><section class="results"><div class="section-label">04 / MATCH & COPY</div>${matchReport(state)}${state.copyActive ? `<div class="copy-progress" aria-live="polite"><progress max="${state.copyProgress?.totalBytes ?? 1}" value="${state.copyProgress?.copiedBytes ?? 0}"></progress><p>${escapeHtml(state.copyProgress?.currentFile ?? "正在执行复制前检查…")} · ${state.copyProgress?.completedFiles ?? 0}/${state.copyProgress?.totalFiles ?? "?"}</p><button id="cancel-copy" type="button">取消复制</button></div>` : ""}${completion}</section>`;
 }
 export function shouldShowStartCopy(state: {
   sessionStatus?: Session["status"];
@@ -1037,6 +1049,9 @@ export function recoveredCompletionReport(workflow: SessionWorkflow): CopyComple
   const skippedUser = copyItems.filter(item =>
     item.status === "skipped" && item.skippedReason === "user-skipped");
   const failed = copyItems.filter(item => item.status === "failed");
+  const networkCopyIncompleteDetails = failed
+    .filter(item => item.errorCode === "network-copy-incomplete")
+    .map(item => item.errorSummary?.trim() || `目标文件 ${redactPath(item.target)} 未完成，目标文件和 .photo-selector-incomplete 内同名记录已保留，请勿使用；请改选空目标目录重试，或人工核对后处理。`);
   const indexedSizes = new Map(
     workflow.snapshot?.items.flatMap(item => item.groups.flatMap(group =>
       group.files.map(file => [file.path, file.size] as const),
@@ -1055,7 +1070,13 @@ export function recoveredCompletionReport(workflow: SessionWorkflow): CopyComple
     target: workflow.bindings.target ? redactPath(workflow.bindings.target) : "未记录",
     startedAt: copyItems[0]?.createdAt ?? null,
     finishedAt,
-    message: workflow.session.status === "completed" ? "复制已完成。" : workflow.session.status === "cancelled" ? "任务已取消。" : "复制失败，请查看失败项。",
+    message: workflow.session.status === "completed"
+      ? "复制已完成。"
+      : workflow.session.status === "cancelled"
+        ? "任务已取消。"
+        : networkCopyIncompleteDetails.length
+          ? `Mac NAS 网络复制未完成：${networkCopyIncompleteDetails.join("；")}`
+          : "复制失败，请查看失败项。",
   };
 }
 
@@ -1091,6 +1112,9 @@ export function applyWorkflow(
   state.numbersConfirmed = workflow.session.numbersConfirmed;
   state.sourceDir = workflow.bindings.source ?? undefined;
   state.targetDir = workflow.bindings.target ?? undefined;
+  state.incompleteTargets = workflow.preflight?.incompleteTargets?.length
+    ? [...workflow.preflight.incompleteTargets]
+    : undefined;
   state.matchReport = workflow.snapshot ? {
     items: workflow.snapshot.items,
     skippedNumbers: workflow.snapshot.skippedNumbers,
@@ -1099,7 +1123,10 @@ export function applyWorkflow(
     confirmationToken: workflow.confirmationToken,
     copyJob: null,
   } : undefined;
-  state.blockingIssues = state.matchReport ? blockingIssuesFrom(state.matchReport) : [];
+  state.blockingIssues = unresolvedIssues([
+    ...(state.matchReport ? blockingIssuesFrom(state.matchReport) : []),
+    ...(state.incompleteTargets?.length ? ["target-conflict" as const] : []),
+  ]);
   if (!preserveMatchingEvent) {
     state.copyActive = workflow.session.status === "copying" || workflow.session.status === "scanning";
     state.completionReport = recoveredCompletionReport(workflow);
@@ -1184,6 +1211,7 @@ export async function hydrateSessionInputs(
 
 export function applyMatchReport(state: AppState, report: MatchReport) {
   state.scanProgress = undefined;
+  state.incompleteTargets = undefined;
   state.matchReport = report;
   state.blockingIssues = blockingIssuesFrom(report);
   if (report.copyJob) applyCopyLaunch(state, report.copyJob);
@@ -1757,9 +1785,9 @@ function bindPageEvents(state: AppState) {
   document.querySelectorAll<HTMLButtonElement>("[data-delete-number]").forEach(b=>b.onclick=async()=>{const result=mutateNumberDraft(state,numbers=>numbers.splice(Number(b.dataset.deleteNumber),1));if(!result)return;try{await result.persistence;render(state);}catch(error){fail(state,error);}});
   document.querySelector<HTMLButtonElement>("#add-number")?.addEventListener("click",async()=>{const result=mutateNumberDraft(state,numbers=>numbers.push({original:"",canonical:"",confidence:null,confirmed:false}));if(!result)return;try{await result.persistence;render(state);}catch(error){fail(state,error);}});
   document.querySelector<HTMLInputElement>("#confirm-numbers")?.addEventListener("change", async e=>{const input=e.currentTarget as HTMLInputElement;const operation=beginNumberConfirmation(state,input.checked);if(!operation){input.checked=state.numbersConfirmed;return;}try{const saved=await operation.persistence;if(!saved||!isCurrentCopyAttempt(state,operation.request))return;render(state);}catch(error){if(!isCurrentCopyAttempt(state,operation.request))return;state.numbersConfirmed=false;state.draftNumbers=state.draftNumbers.map(x=>({...x,confirmed:false}));fail(state,error);}});
-  document.querySelector<HTMLButtonElement>("#choose-source")?.addEventListener("click",async()=>{if(!state.activeSession||isNumberWorkflowLocked(state))return;try{const p=await bridge.chooseDirectory(state.activeSession.id,"source");state.sourceDir=p.source ?? undefined;state.targetDir=p.target ?? undefined;render(state);}catch(e){fail(state,e);}}); document.querySelector<HTMLButtonElement>("#choose-target-base")?.addEventListener("click",async()=>{if(!state.activeSession||isNumberWorkflowLocked(state))return;try{state.targetDir=await bridge.targetUnderSelectedBase(state.activeSession.id);render(state);}catch(e){fail(state,e);}});
-  document.querySelector<HTMLFormElement>("#manual-source-form")?.addEventListener("submit",async e=>{e.preventDefault();if(!state.activeSession||isNumberWorkflowLocked(state))return;const form=e.currentTarget as HTMLFormElement;const path=String(new FormData(form).get("path")??"").trim();if(!path)return;try{const p=await bridge.bindManualDirectory(state.activeSession.id,"source",path);state.sourceDir=p.source ?? undefined;state.targetDir=p.target ?? undefined;render(state);}catch(error){fail(state,error);}});
-  document.querySelector<HTMLFormElement>("#manual-target-base-form")?.addEventListener("submit",async e=>{e.preventDefault();if(!state.activeSession||!state.sourceDir||isNumberWorkflowLocked(state))return;const form=e.currentTarget as HTMLFormElement;const path=String(new FormData(form).get("path")??"").trim();if(!path)return;try{const p=await bridge.bindManualDirectory(state.activeSession.id,"targetBase",path);state.targetDir=p.target ?? undefined;render(state);}catch(error){fail(state,error);}});
+  document.querySelector<HTMLButtonElement>("#choose-source")?.addEventListener("click",async()=>{if(!state.activeSession||isNumberWorkflowLocked(state))return;try{const p=await bridge.chooseDirectory(state.activeSession.id,"source");state.sourceDir=p.source ?? undefined;state.targetDir=p.target ?? undefined;state.incompleteTargets=undefined;render(state);}catch(e){fail(state,e);}}); document.querySelector<HTMLButtonElement>("#choose-target-base")?.addEventListener("click",async()=>{if(!state.activeSession||isNumberWorkflowLocked(state))return;try{state.targetDir=await bridge.targetUnderSelectedBase(state.activeSession.id);state.incompleteTargets=undefined;render(state);}catch(e){fail(state,e);}});
+  document.querySelector<HTMLFormElement>("#manual-source-form")?.addEventListener("submit",async e=>{e.preventDefault();if(!state.activeSession||isNumberWorkflowLocked(state))return;const form=e.currentTarget as HTMLFormElement;const path=String(new FormData(form).get("path")??"").trim();if(!path)return;try{const p=await bridge.bindManualDirectory(state.activeSession.id,"source",path);state.sourceDir=p.source ?? undefined;state.targetDir=p.target ?? undefined;state.incompleteTargets=undefined;render(state);}catch(error){fail(state,error);}});
+  document.querySelector<HTMLFormElement>("#manual-target-base-form")?.addEventListener("submit",async e=>{e.preventDefault();if(!state.activeSession||!state.sourceDir||isNumberWorkflowLocked(state))return;const form=e.currentTarget as HTMLFormElement;const path=String(new FormData(form).get("path")??"").trim();if(!path)return;try{const p=await bridge.bindManualDirectory(state.activeSession.id,"targetBase",path);state.targetDir=p.target ?? undefined;state.incompleteTargets=undefined;render(state);}catch(error){fail(state,error);}});
   document.querySelector<HTMLButtonElement>("#scan")?.addEventListener("click",async()=>{if(!state.activeSession||!canScanDirectory(state))return;const sessionId=state.activeSession.id;const source=state.sourceDir!;const target=state.targetDir!;const request=beginCopyAttempt(state,sessionId);state.numberWorkflowCommandPending="scan";render(state);try{const report=await bridge.scanAndMatch(sessionId,source,target);if(!isCurrentCopyAttempt(state,request))return;state.numberWorkflowCommandPending=undefined;applyMatchReport(state,report);render(state);}catch(e){if(isCurrentCopyAttempt(state,request)){state.numberWorkflowCommandPending=undefined;fail(state,e);}}});
   document.querySelectorAll<HTMLButtonElement>("[data-resolve-group]").forEach(b=>b.onclick=async()=>{if(!state.activeSession)return;try{await bridge.resolveAmbiguousMatch(state.activeSession.id,b.dataset.resolveGroup!,b.dataset.groupId!);if(!await refreshWorkflow(state))return;state.modal=undefined;render(state);}catch(e){fail(state,e,"ambiguous");}});
   document.querySelectorAll<HTMLButtonElement>("[data-resolve]").forEach(b=>b.onclick=async()=>{if(!state.activeSession)return;try{await bridge.resolveMatch(state.activeSession.id,b.dataset.resolve!,{kind:b.dataset.resolution as "acceptPartial"|"skip"});if(!await refreshWorkflow(state))return;state.modal=undefined;render(state);}catch(e){fail(state,e);}});

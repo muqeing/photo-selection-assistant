@@ -14,7 +14,7 @@ async function writeDmgFixture(
   sourceCommit: string,
   overrides: Record<string, unknown> = {},
 ) {
-  const filename = "照片筛选助手_0.1.23_aarch64.dmg";
+  const filename = "照片筛选助手_0.1.24_aarch64.dmg";
   const dmgDirectory = resolve(bundleDirectory, "dmg");
   const artifact = resolve(dmgDirectory, filename);
   const bytes = Buffer.from("verified artifact bytes");
@@ -96,15 +96,15 @@ describe("release metadata", () => {
       const contents = await readFile(output, "utf8");
       const metadata = JSON.parse(contents);
 
-      expect(metadata.version).toBe("0.1.23");
+      expect(metadata.version).toBe("0.1.24");
       expect(metadata.macos.status).toBe("not-built-on-this-host");
       expect(
         metadata.windows.expectedArtifacts.map(
           ({ filename }: { filename: string }) => filename,
         ),
       ).toEqual([
-        "照片筛选助手_0.1.23_x64-setup.exe",
-        "照片筛选助手_0.1.23_x64_zh-CN.msi",
+        "照片筛选助手_0.1.24_x64-setup.exe",
+        "照片筛选助手_0.1.24_x64_zh-CN.msi",
       ]);
       expect(contents).not.toContain(secretMarker);
       expect(contents).not.toContain(bundleDirectory);
@@ -141,9 +141,9 @@ describe("release metadata", () => {
       const metadata = JSON.parse(await readFile(output, "utf8"));
       expect(metadata.windows.expectedArtifacts[1]).toMatchObject({
         kind: "msi",
-        filename: "照片筛选助手_0.1.23_x64_ja-JP.msi",
+        filename: "照片筛选助手_0.1.24_x64_ja-JP.msi",
         relativePath:
-          "src-tauri/target/release/bundle/msi/照片筛选助手_0.1.23_x64_ja-JP.msi",
+          "src-tauri/target/release/bundle/msi/照片筛选助手_0.1.24_x64_ja-JP.msi",
       });
     } finally {
       await rm(fixtureRoot, { recursive: true, force: true });
@@ -213,7 +213,7 @@ describe("release metadata", () => {
           },
         ),
       ).rejects.toMatchObject({
-        stderr: expect.stringContaining("0.1.23"),
+        stderr: expect.stringContaining("0.1.24"),
       });
     } finally {
       await rm(fixtureRoot, { recursive: true, force: true });
@@ -241,7 +241,7 @@ describe("release metadata", () => {
       expect(metadata.macos).toMatchObject({
         status: "built",
         artifact: {
-          filename: "照片筛选助手_0.1.23_aarch64.dmg",
+          filename: "照片筛选助手_0.1.24_aarch64.dmg",
           sourceCommit,
         },
       });
@@ -259,7 +259,7 @@ describe("release metadata", () => {
     try {
       await mkdir(dmgDirectory, { recursive: true });
       await writeFile(
-        resolve(dmgDirectory, "照片筛选助手_0.1.23_aarch64.dmg"),
+        resolve(dmgDirectory, "照片筛选助手_0.1.24_aarch64.dmg"),
         "old same-version artifact",
       );
       await expect(

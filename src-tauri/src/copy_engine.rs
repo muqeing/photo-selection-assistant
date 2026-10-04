@@ -71,6 +71,217 @@ mod tests {
             .contains(".part-")));
     }
 
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_sync_falls_back_only_when_full_sync_is_unsupported() {
+        for code in [libc::ENOTSUP, libc::EOPNOTSUPP] {
+            let fallback_calls = Cell::new(0);
+            sync_macos_target_with(
+                || Err(std::io::Error::from_raw_os_error(code)),
+                || {
+                    fallback_calls.set(fallback_calls.get() + 1);
+                    Ok(())
+                },
+            )
+            .unwrap();
+            assert_eq!(fallback_calls.get(), 1);
+        }
+        sync_macos_target_with(|| Ok(()), || panic!("full sync succeeded")).unwrap();
+        for code in [
+            libc::ENOSPC,
+            libc::EACCES,
+            libc::EIO,
+            libc::EBADF,
+            libc::EINVAL,
+        ] {
+            let error = sync_macos_target_with(
+                || Err(std::io::Error::from_raw_os_error(code)),
+                || panic!("real I/O errors must not be retried as a weaker sync"),
+            )
+            .unwrap_err();
+            assert_eq!(error.raw_os_error(), Some(code));
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_sync_propagates_fallback_failure() {
+        let error = sync_macos_target_with(
+            || Err(std::io::Error::from_raw_os_error(libc::ENOTSUP)),
+            || Err(std::io::Error::from_raw_os_error(libc::EIO)),
+        )
+        .unwrap_err();
+        assert_eq!(error.raw_os_error(), Some(libc::EIO));
+    }
+
+    #[test]
+    fn old_preflight_data_loads_without_network_fields() {
+        let mut json = serde_json::to_value(PreflightReport::default()).unwrap();
+        json.as_object_mut().unwrap().remove("networkCopyMode");
+        json.as_object_mut().unwrap().remove("incompleteTargets");
+        json.as_object_mut().unwrap().remove("targetRootIdentity");
+        let mut report: PreflightReport = serde_json::from_value(json).unwrap();
+        assert!(!report.network_copy_mode);
+        assert!(report.incomplete_targets.is_empty());
+        report.incomplete_targets.push("incomplete.JPG".into());
+        assert!(report.has_blocking_issue());
+        assert!(!report.is_complete_for_terminal_validation());
+    }
+
+    #[test]
+    fn checked_copy_rejects_replaced_missing_or_wrong_volume_target() {
+        for change in ["replace", "missing", "expected-smb"] {
+            let dir = test_tempdir();
+            let source = dir.path().join("source");
+            let target = dir.path().join("target");
+            fs::create_dir(&source).unwrap();
+            fs::create_dir(&target).unwrap();
+            let input = source.join("IMG_0001.JPG");
+            fs::write(&input, b"test photo bytes").unwrap();
+            let plan = copy_plan(
+                &source,
+                target.clone(),
+                vec![selected(input, target.join("IMG_0001.JPG"))],
+            );
+            let mut preflight = preflight_copy(&plan).unwrap();
+            match change {
+                "replace" => {
+                    fs::rename(&target, dir.path().join("original-target")).unwrap();
+                    fs::create_dir(&target).unwrap();
+                }
+                "missing" => fs::remove_dir(&target).unwrap(),
+                _ => preflight.network_copy_mode = true,
+            }
+            let report = execute_copy_after_preflight(
+                &plan,
+                &preflight,
+                &AtomicBool::new(false),
+                |_, _| panic!("changed target must not be written"),
+                |_, _| {},
+            );
+            assert!(report.copied.is_empty());
+            assert!(!report.failed.is_empty());
+            assert!(!plan.files[0].target.exists());
+            if change == "missing" {
+                assert!(!target.exists());
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    #[ignore = "requires PHOTO_SELECTOR_TEST_VOLUME pointing to an explicitly selected filesystem"]
+    fn macos_volume_copy_preserves_sources_and_blocks_conflicts() {
+        let volume = std::env::var_os("PHOTO_SELECTOR_TEST_VOLUME")
+            .expect("select a writable test volume explicitly");
+        let fixture = tempfile::Builder::new()
+            .prefix(".photo-selector-acceptance-")
+            .tempdir_in(volume)
+            .unwrap();
+        let source = fixture.path().join("source");
+        let target = fixture.path().join("target");
+        fs::create_dir(&source).unwrap();
+        fs::create_dir(&target).unwrap();
+        let files = (0..18)
+            .map(|index| {
+                let name = format!("ANONYMOUS_{index:04}.JPG");
+                let path = source.join(&name);
+                fs::write(&path, vec![index as u8; 65_537 + index]).unwrap();
+                selected(path, target.join(name))
+            })
+            .collect::<Vec<_>>();
+        let original_hashes = files
+            .iter()
+            .map(|file| hash_file(&file.source).unwrap())
+            .collect::<Vec<_>>();
+        let plan = copy_plan(&source, target.clone(), files);
+        let initial_preflight = preflight_copy(&plan).unwrap();
+        assert!(
+            !initial_preflight.has_blocking_issue(),
+            "shared-volume preflight: {initial_preflight:?}"
+        );
+        let report = execute_copy_after_preflight(
+            &plan,
+            &initial_preflight,
+            &AtomicBool::new(false),
+            |_, _| {},
+            |_, _| {},
+        );
+        assert_eq!(report.copied.len(), 18);
+        assert!(report.failed.is_empty());
+        for (file, hash) in plan.files.iter().zip(&original_hashes) {
+            assert_eq!(hash_file(&file.source).unwrap(), *hash);
+            assert_eq!(hash_file(&file.target).unwrap(), *hash);
+        }
+        assert_eq!(preflight_copy(&plan).unwrap().identical.len(), 18);
+        let repeated =
+            execute_copy_with_updates(&plan, &AtomicBool::new(false), |_, _| {}, |_, _| {});
+        assert_eq!(repeated.skipped_identical.len(), 18);
+        assert!(repeated.copied.is_empty());
+        assert!(repeated.failed.is_empty());
+        fs::write(&plan.files[0].target, b"existing different test content").unwrap();
+        let preflight = preflight_copy(&plan).unwrap();
+        assert!(preflight.has_blocking_issue());
+        assert_eq!(preflight.conflicts.len(), 1);
+        assert_eq!(preflight.identical.len(), 17);
+        assert_eq!(
+            fs::read(&plan.files[0].target).unwrap(),
+            b"existing different test content"
+        );
+        for entry in fs::read_dir(&target).unwrap() {
+            let entry = entry.unwrap();
+            if entry.file_name() == ".photo-selector-incomplete" {
+                assert!(fs::read_dir(entry.path()).unwrap().next().is_none());
+            } else {
+                assert!(!entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with(".photo-selector"));
+            }
+        }
+        if initial_preflight.network_copy_mode {
+            let interrupted_source = source.join("ANONYMOUS_INTERRUPTED.JPG");
+            fs::write(&interrupted_source, vec![33; COPY_BUFFER_BYTES * 2 + 17]).unwrap();
+            let interrupted_item =
+                selected(interrupted_source, target.join("ANONYMOUS_INTERRUPTED.JPG"));
+            let interrupted = copy_plan(&source, target.clone(), vec![interrupted_item]);
+            let cancelled = AtomicBool::new(false);
+            let stopped = execute_copy_with_updates(
+                &interrupted,
+                &cancelled,
+                |_, _| {
+                    cancelled.store(true, Ordering::Relaxed);
+                },
+                |_, _| {},
+            );
+            assert!(stopped.copied.is_empty());
+            assert_eq!(stopped.failed.len(), 1);
+            assert!(interrupted.files[0].target.exists());
+            let blocked = preflight_copy(&interrupted).unwrap();
+            assert_eq!(blocked.incomplete_targets.len(), 1);
+            assert!(blocked.has_blocking_issue());
+            assert!(blocked.identical.is_empty());
+            // Even a complete-looking target stays blocked while its record remains.
+            fs::copy(&interrupted.files[0].source, &interrupted.files[0].target).unwrap();
+            let blocked = preflight_copy(&interrupted).unwrap();
+            assert_eq!(blocked.incomplete_targets.len(), 1);
+            assert!(blocked.identical.is_empty());
+            let retry = execute_copy_with_updates(
+                &interrupted,
+                &AtomicBool::new(false),
+                |_, _| {},
+                |_, _| {},
+            );
+            assert!(retry.copied.is_empty());
+            assert!(retry.skipped_identical.is_empty());
+            assert_eq!(retry.failed.len(), 1);
+        }
+        println!("18 copied and verified; 18 identical skipped; conflict protected; network mode: {}; interruption checks passed", initial_preflight.network_copy_mode);
+        let fixture_path = fixture.path().to_path_buf();
+        fixture.close().unwrap();
+        assert!(!fixture_path.exists());
+    }
+
     #[test]
     fn copying_does_not_require_a_one_megabyte_thread_stack() {
         let directory = test_tempdir();
@@ -2001,6 +2212,7 @@ use uuid::Uuid;
 use crate::models::{FileFingerprint, FileIdentity, SelectedFile};
 
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
+mod network_copy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TargetConflict {
@@ -2064,6 +2276,8 @@ pub enum CopyError {
     AtomicCommitUnsupported,
     #[error("目标文件已存在，未执行覆盖")]
     TargetAlreadyExists,
+    #[error("网络盘复制未完成，目标文件和未完成记录已保留，请勿使用；请改选空目标目录重试，或人工核对后处理目标文件及 .photo-selector-incomplete 内同名记录。原因：{reason}")]
+    NetworkCopyIncomplete { reason: String },
     #[error("临时文件清理失败（原操作：{operation}；清理：{cleanup}）")]
     CleanupFailed { operation: String, cleanup: String },
 }
@@ -2086,6 +2300,12 @@ pub struct PreflightReport {
     pub permission_denied: bool,
     pub insufficient_space: bool,
     pub atomic_commit_unsupported: bool,
+    #[serde(default)]
+    pub network_copy_mode: bool,
+    #[serde(default)]
+    pub incomplete_targets: Vec<String>,
+    #[serde(default)]
+    pub target_root_identity: Option<FileIdentity>,
     pub source_changed: bool,
     pub source_disconnected: bool,
     #[serde(default)]
@@ -2101,6 +2321,7 @@ pub struct PreflightReport {
 impl PreflightReport {
     pub fn is_complete_for_terminal_validation(&self) -> bool {
         !self.permission_denied
+            && self.incomplete_targets.is_empty()
             && !self.atomic_commit_unsupported
             && !self.source_changed
             && !self.source_disconnected
@@ -2109,6 +2330,7 @@ impl PreflightReport {
 
     pub fn has_blocking_issue(&self) -> bool {
         !self.ambiguous.is_empty()
+            || !self.incomplete_targets.is_empty()
             || !self.partial.is_empty()
             || !self.missing.is_empty()
             || !self.conflicts.is_empty()
@@ -2139,6 +2361,7 @@ impl CopyError {
             Self::ProgressPanicked => "progress-panicked",
             Self::AtomicCommitUnsupported => "atomic-commit-unsupported",
             Self::TargetAlreadyExists => "target-conflict",
+            Self::NetworkCopyIncomplete { .. } => "network-copy-incomplete",
             Self::CleanupFailed { .. } => "cleanup-failed",
         }
     }
@@ -3531,6 +3754,7 @@ fn compare_existing_at(
 }
 
 fn open_existing_target_nofollow(target: &TargetLocation) -> Result<Option<File>, CopyError> {
+    ensure_target_not_incomplete(target)?;
     let mut options = CapOpenOptions::new();
     options.read(true).follow(FollowSymlinks::No);
     #[cfg(unix)]
@@ -3595,6 +3819,16 @@ fn open_existing_target_nofollow(target: &TargetLocation) -> Result<Option<File>
         return Err(CopyError::InvalidTarget);
     }
     Ok(Some(file))
+}
+
+fn ensure_target_not_incomplete(target: &TargetLocation) -> Result<(), CopyError> {
+    if network_copy::has_incomplete(target)? {
+        Err(CopyError::NetworkCopyIncomplete {
+            reason: "存在上次未完成的复制记录".into(),
+        })
+    } else {
+        Ok(())
+    }
 }
 
 fn open_cleanup_file_nofollow(target: &TargetLocation) -> Result<Option<File>, CopyError> {
@@ -4289,6 +4523,50 @@ fn windows_delete_file_on_close(file: &File) -> std::io::Result<()> {
     }
 }
 
+#[cfg(target_os = "macos")]
+fn sync_macos_target_with(
+    full_sync: impl FnOnce() -> std::io::Result<()>,
+    filesystem_sync: impl FnOnce() -> std::io::Result<()>,
+) -> std::io::Result<()> {
+    match full_sync() {
+        Err(error)
+            if matches!(
+                error.raw_os_error(),
+                Some(libc::ENOTSUP) | Some(libc::EOPNOTSUPP)
+            ) =>
+        {
+            filesystem_sync()
+        }
+        result => result,
+    }
+}
+
+fn sync_target_file(file: &File) -> std::io::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::fd::AsRawFd;
+
+        // Rust sync_all/sync_data both request F_FULLFSYNC on macOS. SMB
+        // mounts can reject that device-cache operation while supporting
+        // fsync's filesystem/server flush. Never ignore a failed flush.
+        sync_macos_target_with(
+            || file.sync_all(),
+            || loop {
+                // SAFETY: file owns the descriptor throughout this call.
+                if unsafe { libc::fsync(file.as_raw_fd()) } == 0 {
+                    return Ok(());
+                }
+                let error = std::io::Error::last_os_error();
+                if error.kind() != std::io::ErrorKind::Interrupted {
+                    return Err(error);
+                }
+            },
+        )
+    }
+    #[cfg(not(target_os = "macos"))]
+    file.sync_all()
+}
+
 fn probe_atomic_commit(root: &TargetRoot) -> Result<(), CopyError> {
     let target_name = OsString::from(format!(".photo-selector-probe-{}", Uuid::new_v4()));
     let target = TargetLocation {
@@ -4304,8 +4582,7 @@ fn probe_atomic_commit(root: &TargetRoot) -> Result<(), CopyError> {
     part.file_mut()
         .write_all(b"atomic-commit-probe")
         .map_err(|error| map_target_io_error(error, root.is_unc, TargetOperation::Write))?;
-    part.file_mut()
-        .sync_all()
+    sync_target_file(part.file_mut())
         .map_err(|error| map_target_io_error(error, root.is_unc, TargetOperation::Sync))?;
     let committed = part.commit(&target);
     #[cfg(windows)]
@@ -4356,6 +4633,22 @@ fn copy_one_at(
     if cancelled.load(Ordering::Relaxed) {
         return Err(CopyError::Cancelled);
     }
+    #[cfg(target_os = "macos")]
+    if network_copy::is_smb(&target.parent)? {
+        return network_copy::copy(
+            source_file,
+            expected_source,
+            target,
+            source_is_unc,
+            cancelled,
+            progress,
+        );
+    }
+    if network_copy::has_incomplete(target)? {
+        return Err(CopyError::NetworkCopyIncomplete {
+            reason: "存在上次未完成的复制记录".into(),
+        });
+    }
     match target.parent.symlink_metadata(&target.name) {
         Ok(_) => return Err(CopyError::InvalidTarget),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
@@ -4401,8 +4694,7 @@ fn copy_one_at(
         {
             return Err(CopyError::SourceChanged);
         }
-        part.file_mut()
-            .sync_all()
+        sync_target_file(part.file_mut())
             .map_err(|error| map_target_io_error(error, target.is_unc, TargetOperation::Sync))?;
         part.file_mut()
             .seek(SeekFrom::Start(0))
@@ -4562,7 +4854,18 @@ fn preflight_copy_cancellable_using(
         }
         Err(error) => return Err(error),
     };
-    match probe_atomic_commit(&target_root) {
+    report.network_copy_mode = network_copy::is_smb(&target_root.dir)?;
+    report.target_root_identity =
+        Some(source_fingerprint(&target_root.dir.try_clone()?.into_std_file())?.identity);
+    #[cfg(target_os = "macos")]
+    let probe = if report.network_copy_mode {
+        network_copy::probe(&target_root)
+    } else {
+        probe_atomic_commit(&target_root)
+    };
+    #[cfg(not(target_os = "macos"))]
+    let probe = probe_atomic_commit(&target_root);
+    match probe {
         Ok(()) => {}
         Err(CopyError::AtomicCommitUnsupported) => {
             report.atomic_commit_unsupported = true;
@@ -4637,6 +4940,12 @@ fn preflight_copy_cancellable_using(
         };
         let existing = match open_existing_target_nofollow(&target) {
             Ok(existing) => existing,
+            Err(CopyError::NetworkCopyIncomplete { .. }) => {
+                report
+                    .incomplete_targets
+                    .push(target.display.to_string_lossy().into_owned());
+                continue;
+            }
             Err(CopyError::TargetDisconnected { info, pending_part }) => {
                 record_preflight_target_disconnect(&mut report, info, pending_part);
                 return Ok(report);
@@ -4651,7 +4960,9 @@ fn preflight_copy_cancellable_using(
                 source_root.is_unc,
                 target.is_unc,
                 cancelled,
-            ) {
+            )
+            .and_then(|conflict| ensure_target_not_incomplete(&target).map(|()| conflict))
+            {
                 Ok(TargetConflict::Identical) => report
                     .identical
                     .push(target.display.to_string_lossy().into_owned()),
@@ -4669,6 +4980,9 @@ fn preflight_copy_cancellable_using(
                 Err(CopyError::InvalidSource | CopyError::SourceChanged) => {
                     report.source_changed = true
                 }
+                Err(CopyError::NetworkCopyIncomplete { .. }) => report
+                    .incomplete_targets
+                    .push(target.display.to_string_lossy().into_owned()),
                 Err(error) => return Err(error),
             },
             None => {
@@ -4690,6 +5004,7 @@ fn preflight_copy_cancellable_using(
     Ok(report)
 }
 
+#[cfg(test)]
 pub fn execute_copy_with_updates(
     plan: &CopyPlan,
     cancelled: &AtomicBool,
@@ -4714,8 +5029,56 @@ pub fn execute_copy_with_updates(
     )
 }
 
+pub fn execute_copy_after_preflight(
+    plan: &CopyPlan,
+    preflight: &PreflightReport,
+    cancelled: &AtomicBool,
+    progress: impl FnMut(&Path, u64),
+    item_update: impl FnMut(&SelectedFile, CopyItemOutcome),
+) -> CopyReport {
+    execute_copy_with_updates_checked(
+        plan,
+        Some(preflight),
+        cancelled,
+        progress,
+        item_update,
+        |source, item, target, source_is_unc, cancelled, progress| {
+            if network_copy::is_smb(&target.parent)? != preflight.network_copy_mode {
+                return Err(CopyError::InvalidTarget);
+            }
+            copy_one_at(
+                source,
+                &item.fingerprint,
+                target,
+                source_is_unc,
+                cancelled,
+                progress,
+            )
+        },
+    )
+}
+
+#[cfg(test)]
 fn execute_copy_with_updates_using(
     plan: &CopyPlan,
+    cancelled: &AtomicBool,
+    progress: impl FnMut(&Path, u64),
+    item_update: impl FnMut(&SelectedFile, CopyItemOutcome),
+    copy_missing: impl FnMut(
+        File,
+        &SelectedFile,
+        &TargetLocation,
+        bool,
+        &AtomicBool,
+        &mut dyn FnMut(u64),
+    ) -> Result<String, CopyError>,
+) -> CopyReport {
+    execute_copy_with_updates_checked(plan, None, cancelled, progress, item_update, copy_missing)
+}
+
+fn execute_copy_with_updates_checked(
+    plan: &CopyPlan,
+    preflight: Option<&PreflightReport>,
     cancelled: &AtomicBool,
     mut progress: impl FnMut(&Path, u64),
     mut item_update: impl FnMut(&SelectedFile, CopyItemOutcome),
@@ -4753,7 +5116,24 @@ fn execute_copy_with_updates_using(
             return report;
         }
     };
-    let target_root = match open_target_root(&plan.target_root) {
+    let opened_target = if preflight.is_some() {
+        open_cleanup_target_root(&plan.target_root)
+            .and_then(|root| root.ok_or(CopyError::InvalidTarget))
+    } else {
+        open_target_root(&plan.target_root)
+    };
+    let target_root = match opened_target.and_then(|root| {
+        if let Some(expected) = preflight {
+            let identity = source_fingerprint(&root.dir.try_clone()?.into_std_file())?.identity;
+            if expected.target_root_identity.as_ref() != Some(&identity)
+                || expected.network_copy_mode != network_copy::is_smb(&root.dir)?
+                || expected.has_blocking_issue()
+            {
+                return Err(CopyError::InvalidTarget);
+            }
+        }
+        Ok(root)
+    }) {
         Ok(root) => root,
         Err(CopyError::TargetDisconnected { info, pending_part }) => {
             record_copy_target_disconnect(&mut report, info, pending_part);
@@ -4839,7 +5219,9 @@ fn execute_copy_with_updates_using(
                     source_root.is_unc,
                     target.is_unc,
                     cancelled,
-                ) {
+                )
+                .and_then(|conflict| ensure_target_not_incomplete(&target).map(|()| conflict))
+                {
                     Ok(TargetConflict::Identical) => {
                         item_update(
                             item,

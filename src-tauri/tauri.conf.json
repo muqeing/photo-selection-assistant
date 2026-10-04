@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "照片筛选助手",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "identifier": "top.muliai.photo-selection-assistant",
   "build": {
     "frontendDist": "../dist",

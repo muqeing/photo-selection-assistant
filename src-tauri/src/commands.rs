@@ -9,6 +9,8 @@ use std::{
     time::Instant,
 };
 
+#[cfg(test)]
+use crate::copy_engine::execute_copy_with_updates;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
@@ -17,8 +19,8 @@ use uuid::Uuid;
 use crate::{
     copy_engine::{
         capture_directory_identity, capture_file_fingerprint, cleanup_pending_target_parts,
-        execute_copy_with_updates, preflight_copy_cancellable, read_bound_source_file, CopyError,
-        CopyItemOutcome, CopyPlan, CopyReport, CopyStopReason, PreflightReport,
+        execute_copy_after_preflight, preflight_copy_cancellable, read_bound_source_file,
+        CopyError, CopyItemOutcome, CopyPlan, CopyReport, CopyStopReason, PreflightReport,
         TargetDisconnectInfo,
     },
     diagnostics::{self, DiagnosticPathKind},
@@ -1690,6 +1692,14 @@ fn validate_recheck_with(
     let history = state.storage.load_copy_items(id)?;
     report.terminal_target_changed =
         terminal_copy_targets_changed(&report, &history, plan_revision);
+    if !report.incomplete_targets.is_empty() {
+        state
+            .storage
+            .save_attention_preflight(id, plan_revision, &report)?;
+        return Err(CommandError::Other(
+            "网络盘中存在未完成的复制记录，已保留目标且不会覆盖。请改选空目标目录重试；原目标及 .photo-selector-incomplete 内同名记录需人工核对后处理。".into(),
+        ));
+    }
     if report.terminal_target_changed {
         state
             .storage
@@ -2299,7 +2309,14 @@ fn emit_worker_attention(
         .filter_map(|value| Path::new(value).file_name())
         .map(|value| value.to_string_lossy().into_owned())
         .collect::<Vec<_>>();
-    let (issue, title, message, affected) = if report.terminal_target_changed {
+    let (issue, title, message, affected) = if !report.incomplete_targets.is_empty() {
+        (
+            BlockingIssue::TargetConflict,
+            "网络盘中有未完成的复制记录",
+            "目标文件尚未通过完整校验，已保留且不会覆盖。请改选空目标目录重试；原目标及 .photo-selector-incomplete 内同名记录需人工核对后处理。",
+            report.incomplete_targets.iter().filter_map(|value| Path::new(value).file_name()).map(|value| value.to_string_lossy().into_owned()).collect(),
+        )
+    } else if report.terminal_target_changed {
         (
             BlockingIssue::SourceChanged,
             "已复制目标发生变化，请重新扫描",
@@ -2669,8 +2686,9 @@ fn run_copy_worker(
         let mut copied_bytes = 0_u64;
         let mut seen_files = HashSet::new();
         let mut history_error = None;
-        let copy_report = execute_copy_with_updates(
+        let copy_report = execute_copy_after_preflight(
             &execution_plan,
+            &preflight,
             &cancelled,
             |path, bytes| {
                 copied_bytes = copied_bytes.saturating_add(bytes);
@@ -2788,6 +2806,9 @@ fn run_copy_worker(
                     failed_files.join("、")
                 )
             };
+            if let Some((_, reason)) = copy_report.failed.first() {
+                message.push_str(&format!("；原因：{reason}"));
+            }
             if let Some(error) = cleanup_error {
                 message.push_str(&format!("；临时输入清理失败：{error}"));
             }

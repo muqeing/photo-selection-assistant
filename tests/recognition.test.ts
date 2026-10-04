@@ -63,6 +63,7 @@ import {
 } from "../src/app";
 import { bridge } from "../src/bridge";
 import type { AppState } from "../src/app";
+import type { SessionWorkflow } from "../src/types";
 
 const { createWorker, recognize } = vi.hoisted(() => ({
   createWorker: vi.fn(),
@@ -3589,6 +3590,8 @@ describe("workbench safety gates", () => {
     expect(markup).toContain('id="manual-source-path"');
     expect(markup).toContain('id="bind-manual-source"');
     expect(markup).toContain("也可直接粘贴本机、映射盘或 UNC 路径");
+    expect(markup).toContain("Mac NAS（SMB）网络复制");
+    expect(markup).toContain("阻止自动重试");
     expect(markup).toContain('id="manual-target-base"');
     expect(markup).toContain('id="bind-manual-target-base"');
   });
@@ -3722,6 +3725,111 @@ describe("workbench safety gates", () => {
       startedAt: "2026-01-01T00:00:03Z",
       finishedAt: "2026-01-01T00:00:13Z",
     });
+  });
+
+  it("recovers detailed Mac NAS guidance for persisted incomplete copies", () => {
+    const workflow = {
+      session: {
+        id: "session-network",
+        taskLabel: "network copy",
+        note: null,
+        status: "failed" as const,
+        createdAt: "2026-01-01T00:00:00Z",
+        numbersConfirmed: true,
+      },
+      numbers: [],
+      inputs: [],
+      bindings: { source: "/source", target: "/target" },
+      snapshot: null,
+      preflight: null,
+      copyItems: [{
+        id: "network-failure",
+        sessionId: "session-network",
+        canonicalNumber: "1",
+        source: "/source/IMG_0001.JPG",
+        target: "/target/IMG_0001.JPG",
+        plannedHash: "",
+        planRevision: 1,
+        status: "failed" as const,
+        sourceHash: null,
+        skippedReason: null,
+        errorCode: "network-copy-incomplete",
+        errorSummary: "网络盘复制未完成：目标文件和 .photo-selector-incomplete/IMG_0001.JPG 已保留，请勿使用；请改选空目标目录重试。",
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:01Z",
+      }],
+      requiresSecondConfirmation: false,
+      confirmationToken: null,
+      sourceAvailable: true,
+      targetAvailable: true,
+    };
+
+    const report = recoveredCompletionReport(workflow);
+    expect(report?.message).toContain("Mac NAS 网络复制未完成");
+    expect(report?.message).toContain(".photo-selector-incomplete/IMG_0001.JPG");
+
+    const markup = renderWorkbenchForTest({
+      page: "workbench",
+      activeSession: workflow.session,
+      sessions: [],
+      inputs: [],
+      detectedOrderId: null,
+      draftNumbers: [],
+      numbersConfirmed: true,
+      sourceDir: "/source",
+      targetDir: "/target",
+      blockingIssues: [],
+      settings: {
+        recognitionMode: "offline",
+        defaultProviderId: null,
+        cloudFallbackOffline: true,
+        secondConfirmationEnabled: false,
+        extensions: [],
+      },
+      providers: [],
+      providerTemplates: [],
+      candidatePreviewUrls: {},
+      copyActive: false,
+      completionReport: report,
+      incompleteTargets: ["/target/IMG_0001.JPG"],
+    } as AppState);
+    expect(markup).toContain("网络盘复制未完成");
+    expect(markup).toContain("Mac NAS（SMB）网络复制");
+    expect(markup).toContain("IMG_0001.JPG");
+  });
+
+  it("blocks a recovered workflow when incomplete network targets remain", () => {
+    const state = {
+      copyActive: false,
+      blockingIssues: [],
+      copyRuntimeSessionId: "",
+      copyRuntimeVersion: 0,
+      copyAttemptGeneration: 0,
+    } as unknown as AppState;
+    const workflow = {
+      session: {
+        id: "session-network-attention",
+        taskLabel: "network attention",
+        note: null,
+        status: "needsAttention" as const,
+        createdAt: "2026-01-01T00:00:00Z",
+        numbersConfirmed: true,
+      },
+      numbers: [],
+      inputs: [],
+      bindings: { source: "/source", target: "/target" },
+      snapshot: null,
+      preflight: { incompleteTargets: ["/target/IMG_0002.JPG"] } as SessionWorkflow["preflight"],
+      copyItems: [],
+      requiresSecondConfirmation: false,
+      confirmationToken: null,
+      sourceAvailable: true,
+      targetAvailable: true,
+    };
+
+    expect(applyWorkflow(state, workflow)).toBe(true);
+    expect(state.incompleteTargets).toEqual(["/target/IMG_0002.JPG"]);
+    expect(state.blockingIssues).toContain("target-conflict");
   });
 
   it("supports keyboard activation for the dropzone", () => {

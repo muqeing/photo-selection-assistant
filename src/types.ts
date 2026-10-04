@@ -111,6 +111,10 @@ export type PreflightReport = {
   permissionDenied: boolean;
   insufficientSpace: boolean;
   atomicCommitUnsupported: boolean;
+  /** Present in newer backends when the target is a Mac SMB/NAS share. */
+  networkCopyMode?: boolean;
+  /** Targets left with a persistent incomplete-copy record. */
+  incompleteTargets?: string[];
   sourceChanged: boolean;
   sourceDisconnected: boolean;
   targetDisconnected: boolean;

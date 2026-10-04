@@ -13,7 +13,7 @@ describe("Tauri invoke bridge contract", () => {
     expect(packageJson.scripts.pretest).toBe("pnpm prepare:ocr");
   });
 
-  it("keeps every declared application version synchronized at 0.1.23", async () => {
+  it("keeps every declared application version synchronized at 0.1.24", async () => {
     const [packageJson, cargoToml, tauriConfig] = await Promise.all([
       readFile(resolve(root, "package.json"), "utf8"),
       readFile(resolve(root, "src-tauri/Cargo.toml"), "utf8"),
@@ -26,9 +26,9 @@ describe("Tauri invoke bridge contract", () => {
     const tauriVersion = JSON.parse(tauriConfig).version;
 
     expect([packageVersion, cargoVersion, tauriVersion]).toEqual([
-      "0.1.23",
-      "0.1.23",
-      "0.1.23",
+      "0.1.24",
+      "0.1.24",
+      "0.1.24",
     ]);
   });
 
