@@ -1,77 +1,125 @@
 {
   "schemaVersion": 1,
   "application": "photo-selection-assistant",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "prerelease": true,
   "license": "MIT",
   "sourceRepository": "https://github.com/muqeing/photo-selection-assistant",
-  "sourceCommit": "a92134f290ca3cfd5d9322975bbb44f76f22b639",
+  "sourceCommit": "5023346cb8ab960323193f45523fc001d69e2fdc",
+  "sourceTree": "f311b1a9f8fc8440647f412c000adb166d023191",
   "sourceArchive": {
-    "filename": "PhotoSelector-0.1.23-source.zip",
-    "sha256": "813e176f1f5780fc5b5ae4b345d604349173c2f374763969c80bf8e5a26dee3a"
+    "name": "PhotoSelector-0.1.24-source.zip",
+    "sha256": "931779243181254b41ef5fe0fcc0c8af31db4017b585d915d28bd5a7c94d9a23",
+    "size": 443134,
+    "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/PhotoSelector-0.1.24-source.zip"
   },
   "artifacts": [
     {
       "schemaVersion": 1,
-      "filename": "PhotoSelector-0.1.23-arm64.dmg",
-      "sizeBytes": 26300469,
-      "sha256": "b8946636b0bf398f9553345a4d27f815f7c81b1cc7580746752629b3f6d80c70",
-      "sourceCommit": "a92134f290ca3cfd5d9322975bbb44f76f22b639",
+      "filename": "PhotoSelector-0.1.24-arm64.dmg",
+      "sizeBytes": 26322415,
+      "sha256": "2c5e4b9655ae9698fb5d938afc41ab00b0e781052541d5a81434949f173c1b79",
+      "sourceCommit": "5023346cb8ab960323193f45523fc001d69e2fdc",
+      "buildArtifactFilename": "照片筛选助手_0.1.24_aarch64.dmg",
+      "sourceTree": "f311b1a9f8fc8440647f412c000adb166d023191",
       "platform": "macos-arm64",
-      "sourceTree": "042fb1ad8f2e5908b48fbf6aec2c737bb5f727e7",
-      "applicationVersion": "0.1.23",
-      "minimumSystemVersion": "11.0",
+      "applicationVersion": "0.1.24",
       "signatureStatus": "ad-hoc; integrity verified; not notarized",
-      "bundleChecks": [
-        "version",
-        "embedded OCR assets",
-        "embedded dependency inventory",
-        "bundle signature integrity",
-        "read-only DMG executable SHA-256 equality",
-        "local build path remapping"
-      ],
-      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.23/PhotoSelector-0.1.23-arm64.dmg"
+      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/PhotoSelector-0.1.24-arm64.dmg"
+    }
+  ],
+  "releaseAssets": [
+    {
+      "name": "LICENSE",
+      "sha256": "5d71a67827089611b66718ee2992d13735a270a495ae27be7a124f50b9c50167",
+      "size": 1064,
+      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/LICENSE"
     },
     {
-      "schemaVersion": 1,
-      "filename": "PhotoSelector-0.1.23-x64-setup.exe",
-      "sizeBytes": 24237260,
-      "sha256": "1d38e7b75e2113af3137b9dbadcdb4984097646288a57f1f76b4c754c44c609e",
-      "sourceCommit": "a92134f290ca3cfd5d9322975bbb44f76f22b639",
-      "sourceTree": "042fb1ad8f2e5908b48fbf6aec2c737bb5f727e7",
-      "sourceArchiveSha256": "813e176f1f5780fc5b5ae4b345d604349173c2f374763969c80bf8e5a26dee3a",
-      "sourceFilesVerifiedBeforeAndAfterBuild": true,
-      "platform": "windows-x64",
-      "applicationVersion": "0.1.23",
-      "signatureStatus": "NotSigned",
-      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.23/PhotoSelector-0.1.23-x64-setup.exe"
+      "name": "PhotoSelector-0.1.24-arm64.dmg",
+      "sha256": "2c5e4b9655ae9698fb5d938afc41ab00b0e781052541d5a81434949f173c1b79",
+      "size": 26322415,
+      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/PhotoSelector-0.1.24-arm64.dmg"
     },
     {
-      "schemaVersion": 1,
-      "filename": "PhotoSelector-0.1.23-x64-zh-CN.msi",
-      "sizeBytes": 26038272,
-      "sha256": "4ba2dffb2087859db6f20ae61c7f890f6ee3b947fe2605d4f9decfa9082e55ca",
-      "sourceCommit": "a92134f290ca3cfd5d9322975bbb44f76f22b639",
-      "sourceTree": "042fb1ad8f2e5908b48fbf6aec2c737bb5f727e7",
-      "sourceArchiveSha256": "813e176f1f5780fc5b5ae4b345d604349173c2f374763969c80bf8e5a26dee3a",
-      "sourceFilesVerifiedBeforeAndAfterBuild": true,
-      "platform": "windows-x64",
-      "applicationVersion": "0.1.23",
-      "signatureStatus": "NotSigned",
-      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.23/PhotoSelector-0.1.23-x64-zh-CN.msi"
+      "name": "PhotoSelector-0.1.24-arm64.dmg.provenance.json",
+      "sha256": "ff61269383ceb15ab4c3a26fdaf9237a0aeff9f2205e8bb5b823390f8651a4a9",
+      "size": 497,
+      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/PhotoSelector-0.1.24-arm64.dmg.provenance.json"
+    },
+    {
+      "name": "PhotoSelector-0.1.24-macos-dependency-licenses.zip",
+      "sha256": "db61efc9ed9e9e85f10da2d2a58f8dcbdfd89f1388828471f3a6133cbd410d10",
+      "size": 2613950,
+      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/PhotoSelector-0.1.24-macos-dependency-licenses.zip"
+    },
+    {
+      "name": "PhotoSelector-0.1.24-source.zip",
+      "sha256": "931779243181254b41ef5fe0fcc0c8af31db4017b585d915d28bd5a7c94d9a23",
+      "size": 443134,
+      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/PhotoSelector-0.1.24-source.zip"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "sha256": "7474e0f1059f22149f9c42263f8466298591bdde7c3b0cf1b6a2f2209c1a0887",
+      "size": 499,
+      "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/SHA256SUMS.txt"
     }
   ],
   "validation": {
-    "frontendTestsPassed": 162,
-    "rustBaselineTestsPassed": 281,
-    "rustBaselineCommit": "c10ba67cec45e089ab609fd175c5c0292f880179",
+    "frontendTestsPassed": 164,
+    "rustTestsPassed": 292,
+    "manualFilesystemTestIgnoredByDefault": 1,
+    "macSMBAnonymousCopyTested": true,
+    "macAPFSAnonymousCopyTested": true,
+    "anonymousFilesCopiedAndVerifiedPerVolume": 18,
+    "identicalFilesSkippedPerVolume": 18,
+    "macSMBInterruptedCopyRetainedAndBlocked": true,
+    "installedMacVersion": "0.1.24",
+    "installedMacBinaryMatchesBuild": true,
     "completeDesktopWorkflowTested": false,
-    "realNASWorkflowTested": false,
+    "realCustomerWorkflowTested": false,
+    "physicalNetworkDisconnectAndPowerLossTested": false,
+    "windowsRebuilt": false,
     "macOSNotarized": false,
-    "windowsPublisherSigned": false,
     "strictClippy": "existing warnings; not passed",
     "allPublishedAttachmentsDownloadedAndVerified": true
   },
+  "previousWindowsRelease": {
+    "version": "0.1.23",
+    "releaseUrl": "https://github.com/muqeing/photo-selection-assistant/releases/tag/v0.1.23",
+    "artifacts": [
+      {
+        "schemaVersion": 1,
+        "filename": "PhotoSelector-0.1.23-x64-setup.exe",
+        "sizeBytes": 24237260,
+        "sha256": "1d38e7b75e2113af3137b9dbadcdb4984097646288a57f1f76b4c754c44c609e",
+        "sourceCommit": "a92134f290ca3cfd5d9322975bbb44f76f22b639",
+        "sourceTree": "042fb1ad8f2e5908b48fbf6aec2c737bb5f727e7",
+        "sourceArchiveSha256": "813e176f1f5780fc5b5ae4b345d604349173c2f374763969c80bf8e5a26dee3a",
+        "sourceFilesVerifiedBeforeAndAfterBuild": true,
+        "platform": "windows-x64",
+        "applicationVersion": "0.1.23",
+        "signatureStatus": "NotSigned",
+        "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.23/PhotoSelector-0.1.23-x64-setup.exe"
+      },
+      {
+        "schemaVersion": 1,
+        "filename": "PhotoSelector-0.1.23-x64-zh-CN.msi",
+        "sizeBytes": 26038272,
+        "sha256": "4ba2dffb2087859db6f20ae61c7f890f6ee3b947fe2605d4f9decfa9082e55ca",
+        "sourceCommit": "a92134f290ca3cfd5d9322975bbb44f76f22b639",
+        "sourceTree": "042fb1ad8f2e5908b48fbf6aec2c737bb5f727e7",
+        "sourceArchiveSha256": "813e176f1f5780fc5b5ae4b345d604349173c2f374763969c80bf8e5a26dee3a",
+        "sourceFilesVerifiedBeforeAndAfterBuild": true,
+        "platform": "windows-x64",
+        "applicationVersion": "0.1.23",
+        "signatureStatus": "NotSigned",
+        "downloadUrl": "https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.23/PhotoSelector-0.1.23-x64-zh-CN.msi"
+      }
+    ]
+  },
   "status": "published-prerelease",
-  "releaseUrl": "https://github.com/muqeing/photo-selection-assistant/releases/tag/v0.1.23"
+  "releaseUrl": "https://github.com/muqeing/photo-selection-assistant/releases/tag/v0.1.24",
+  "publishedAt": "2026-10-04T16:24:28Z"
 }

@@ -2,7 +2,7 @@
 
 本地优先的桌面照片筛选与安全复制工具。它把客户选片文字或截图中的编号交给操作员确认，在源目录中递归匹配 RAW + JPG/JPEG，再复制到 `照片成片/待精修的原片`。匹配时忽略前导零，复制写入后使用 BLAKE3 校验，绝不静默覆盖源文件或内容不同的目标文件。
 
-**开发版本：0.1.24（Mac SMB 同步兼容修复）；公开下载仍为 0.1.23。** 自动测试通过不等于所有桌面和 NAS 场景已验收，详见 [验证记录](docs/release-verification.md)。
+**Mac 最新修复版：0.1.24（预发布，修复 SMB/NAS 复制失败）；Windows 安装包仍为 0.1.23。** 验证包含 Mac 实际 NAS 上的匿名文件复制；自动测试与匿名验收不等于全部业务场景均已验收，详见 [验证记录](docs/release-verification.md)。
 
 ## 功能与使用
 
@@ -26,15 +26,15 @@
 
 ## 下载安装包
 
-从 [GitHub Releases](https://github.com/muqeing/photo-selection-assistant/releases) 下载 0.1.23 预发布版：
+从 [GitHub Releases](https://github.com/muqeing/photo-selection-assistant/releases) 下载安装包：
 
 | 系统 | 文件 |
 | --- | --- |
-| Mac Apple Silicon（M 系列） | `PhotoSelector-0.1.23-arm64.dmg` |
-| Windows 64 位 | `PhotoSelector-0.1.23-x64-setup.exe` |
-| Windows 64 位 MSI | `PhotoSelector-0.1.23-x64-zh-CN.msi` |
+| Mac Apple Silicon（M 系列） | [PhotoSelector-0.1.24-arm64.dmg](https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.24/PhotoSelector-0.1.24-arm64.dmg) |
+| Windows 64 位 | [PhotoSelector-0.1.23-x64-setup.exe](https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.23/PhotoSelector-0.1.23-x64-setup.exe) |
+| Windows 64 位 MSI | [PhotoSelector-0.1.23-x64-zh-CN.msi](https://github.com/muqeing/photo-selection-assistant/releases/download/v0.1.23/PhotoSelector-0.1.23-x64-zh-CN.msi) |
 
-Release 同时提供 SHA-256 校验值、构建来源和第三方许可文件。Mac 包是本地 ad-hoc 签名、未 Apple 公证；Windows 包没有发布者签名。桌面全流程和实际 NAS 场景尚有待验收项，见验证记录。
+Release 同时提供 SHA-256 校验值、构建来源和第三方许可文件。Mac 0.1.24 已在真实 SMB 挂载上通过匿名复制验收，本次没有重新构建 Windows 包。Mac 包是本地 ad-hoc 签名、未 Apple 公证；Windows 包没有发布者签名。桌面全流程、真实业务素材及实际断网/断电仍有待验收项，见验证记录。
 
 ## 从源码构建
 
